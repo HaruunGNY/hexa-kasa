@@ -240,3 +240,8 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 .chip.editing { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; }
 .chip.editing button { width: 26px; height: 26px; border-radius: 50%; background: var(--chip); color: var(--exp); font-size: 12px; }
 .chip.done { color: var(--on-grad); background: var(--grad); border-color: transparent; font-weight: 600; }
+/* Kategori düzenleme modu (işlem ekranı) */
+.cat.editing { position: relative; border-style: dashed; border-color: var(--line); }
+.catx { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--exp); color: #fff; font-size: 11px; line-height: 24px; }
+.cat.done { background: var(--grad); color: var(--on-grad); font-weight: 600; }

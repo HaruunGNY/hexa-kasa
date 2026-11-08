@@ -2,7 +2,7 @@
 (() => {
   // ===================== Sabitler =====================
   const KEY = 'hexakasa_data_v1';
-  const VERSION = '1.3.1';
+  const VERSION = '1.3.2';
   const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const WDS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
   const WDL = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -518,6 +518,22 @@
   const subChip = s => `<span class="schip" data-sid="${esc(s.id)}"><span class="sn">${esc(s.name)}</span><button type="button" data-act="subdel" aria-label="${esc(s.name)} sil">✕</button></span>`;
   let catsDirty = false;
   // Alt kategoriyi sil: ona bağlı işlemler sadece ana kategoriyle görünmeye devam eder
+  // Kategoriyi sil: işlemleri silinmez, "Kategorisiz" görünür; bütçesi ve ona bağlı kısayollar kaldırılır
+  function deleteCategory(type, catId) {
+    const c = findCat(type, catId); if (!c) return true;
+    if (D.categories[type].length <= 1) { toast('En az bir kategori kalmalı'); return false; }
+    const n = D.tx.filter(t => t.type === type && t.categoryId === catId).length;
+    const favs = D.favorites.filter(f => f.type === type && f.categoryId === catId).length;
+    const msg = `"${c.name}" kategorisi silinsin mi?` +
+      (n ? `\n\n${n} işlemde kullanılıyor. İşlemler silinmez, "Kategorisiz" olarak görünür.` : '') +
+      (favs ? `\n${favs} sık kullanılan kısayol da kaldırılacak.` : '');
+    if (!confirm(msg)) return false;
+    D.categories[type] = D.categories[type].filter(x => x.id !== catId);
+    delete D.budgets[catId];
+    D.favorites = D.favorites.filter(f => !(f.type === type && f.categoryId === catId));
+    save();
+    return true;
+  }
   function deleteSub(type, catId, subId) {
     const c = findCat(type, catId); if (!c) return true;
     const s = c.subs.find(x => x.id === subId); if (!s) return true;
@@ -534,7 +550,7 @@
   function openCats(type) {
     catsDirty = false;
     openSheet(`<div class="sheethead"><button data-act="close">✕</button><b>${type === 'expense' ? 'Gider' : 'Gelir'} Kategorileri</b><span class="sp"></span></div>
-      <div class="note">Simgeye dokunarak değiştir. Alt kategori eklemek / silmek anında kaydedilir; isim, simge ve sıra değişiklikleri için alttaki <b>Kaydet</b>'e bas.</div>
+      <div class="note">Simgeye dokunarak değiştir. Kategori ve alt kategori silmek / eklemek anında kaydedilir. İsim, simge ve sıra değişiklikleri için alttaki <b>Kaydet</b>'e bas.</div>
       <div id="catlist" data-type="${type}">${D.categories[type].map(catRow).join('')}</div>
       <button class="btn wide" data-act="catadd">+ Yeni kategori</button>
       <div class="actions"><button class="btn primary" data-act="savecats" data-v="${type}">Kaydet</button></div>`);
@@ -602,6 +618,19 @@
   function accSelect(id, val) {
     return `<select id="${id}">${D.accounts.map(a => `<option value="${a.id}" ${a.id === val ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>`;
   }
+  function catGrid() {
+    const cats = D.categories[Ed.type];
+    if (Ed.catEdit) {
+      return `<div class="flabel">Kategorileri düzenle <span class="muted">(✕ ile sil)</span></div><div class="catgrid">${cats.map(c =>
+        `<div class="cat editing"><span>${c.icon}</span>${esc(c.name)}<button type="button" class="catx" data-act="ecatdel" data-v="${esc(c.id)}" aria-label="${esc(c.name)} sil">✕</button></div>`).join('')}
+        <button type="button" class="cat add" data-act="ecatadd"><span>＋</span>Yeni</button>
+        <button type="button" class="cat done" data-act="ecatedit"><span>✓</span>Bitti</button></div>`;
+    }
+    return `<div class="flabel">Kategori</div><div class="catgrid">${cats.map(c =>
+      `<button type="button" class="cat ${c.id === Ed.categoryId ? 'on' : ''}" data-act="ecat" data-v="${esc(c.id)}"><span>${c.icon}</span>${esc(c.name)}</button>`).join('')}
+      <button type="button" class="cat add" data-act="ecatadd"><span>＋</span>Yeni</button>
+      <button type="button" class="cat add" data-act="ecatedit"><span>✎</span>Düzenle</button></div>`;
+  }
   function subChips() {
     const c = findCat(Ed.type, Ed.categoryId);
     if (!c) return '';
@@ -634,10 +663,7 @@
           <label>${e.type === 'transfer' ? 'Kimden' : 'Hesap'}${accSelect('f-acc', e.accountId)}</label>
         </div>
         ${e.type === 'transfer' ? `<label>Kime${accSelect('f-to', e.toAccountId)}</label>`
-          : `<div class="flabel">Kategori</div><div class="catgrid">${D.categories[e.type].map(c =>
-            `<button type="button" class="cat ${c.id === e.categoryId ? 'on' : ''}" data-act="ecat" data-v="${esc(c.id)}"><span>${c.icon}</span>${esc(c.name)}</button>`).join('')}
-            <button type="button" class="cat add" data-act="ecatadd"><span>＋</span>Yeni</button></div>
-            <div id="subrow">${subChips()}</div>`}
+          : `<div id="catarea">${catGrid()}</div><div id="subrow">${subChips()}</div>`}
         <label>Not<input id="f-note" value="${esc(e.note)}" placeholder="İsteğe bağlı (örn. Migros)" list="notelist" autocomplete="off"></label>
         <datalist id="notelist">${notes.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
         ${!e.id ? `<div class="twocol">
@@ -941,6 +967,13 @@
       case 'ecatadd': quickAddCategory(); break;
       case 'esubadd': quickAddSub(); break;
       case 'esubedit': Ed.subEdit = !Ed.subEdit; $('#subrow').innerHTML = subChips(); break;
+      case 'ecatedit': Ed.catEdit = !Ed.catEdit; Ed.subEdit = false; $('#catarea').innerHTML = catGrid(); $('#subrow').innerHTML = Ed.catEdit ? '' : subChips(); break;
+      case 'ecatdel':
+        if (deleteCategory(Ed.type, v)) {
+          if (Ed.categoryId === v) { Ed.categoryId = null; Ed.subId = null; }
+          $('#catarea').innerHTML = catGrid(); render(); toast('Kategori silindi');
+        }
+        break;
       case 'esubdel':
         if (deleteSub(Ed.type, Ed.categoryId, v)) {
           if (Ed.subId === v) Ed.subId = null;
@@ -1025,9 +1058,8 @@
       case 'catup': { const r = el.closest('.cedit'); if (r.previousElementSibling) { r.parentNode.insertBefore(r, r.previousElementSibling); catsDirty = true; } break; }
       case 'catdel': {
         const r = el.closest('.cedit'), id = r.dataset.id;
-        const n = id ? D.tx.filter(t => t.categoryId === id).length : 0;
-        if (n && !confirm(`Bu kategori ${n} işlemde kullanılıyor. Silinirse bu işlemler "Kategorisiz" görünür. Devam?`)) return;
-        r.remove(); catsDirty = true;
+        if (!id) { r.remove(); break; } // henüz kaydedilmemiş yeni satır
+        if (deleteCategory($('#catlist').dataset.type, id)) { r.remove(); render(); toast('Kategori silindi'); }
         break;
       }
       case 'subdel': {
