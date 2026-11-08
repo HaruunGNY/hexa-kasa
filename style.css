@@ -229,3 +229,14 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 #toast.show { opacity: 1; }
 .ver .brand { font-weight: 700; text-decoration: none; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .ver { line-height: 1.7; }
+
+/* Alt kategori çipleri (Ayarlar) */
+.schips { display: flex; flex-wrap: wrap; gap: 6px; }
+.schip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px; border-radius: 18px;
+  background: var(--card); border: 1px solid var(--line); font-size: 13.5px; }
+.cedit .schip button { width: 26px; height: 26px; border-radius: 50%; background: var(--chip); color: var(--exp); font-size: 12px; }
+.cedit button.schip.add { width: auto; height: auto; padding: 7px 12px; color: var(--pri); border-style: dashed; background: none; }
+/* Alt kategori düzenleme modu (işlem ekranı) */
+.chip.editing { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; }
+.chip.editing button { width: 26px; height: 26px; border-radius: 50%; background: var(--chip); color: var(--exp); font-size: 12px; }
+.chip.done { color: var(--on-grad); background: var(--grad); border-color: transparent; font-weight: 600; }

@@ -1,5 +1,5 @@
 ﻿// Çevrimdışı çalışma: önce ağdan dene (güncellemeler hemen gelsin), ağ yoksa önbellekten aç.
-const CACHE = 'hexakasa-v3';
+const CACHE = 'hexakasa-v4';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 

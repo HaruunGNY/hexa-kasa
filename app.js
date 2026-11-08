@@ -2,7 +2,7 @@
 (() => {
   // ===================== Sabitler =====================
   const KEY = 'hexakasa_data_v1';
-  const VERSION = '1.3.0';
+  const VERSION = '1.3.1';
   const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const WDS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
   const WDL = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -513,12 +513,29 @@
         <input class="cn" value="${esc(c.name)}" placeholder="Kategori adı">
         <button data-act="catup" aria-label="Yukarı taşı">↑</button><button class="del" data-act="catdel" aria-label="Sil">✕</button>
       </div>
-      <input class="subs" value="${esc((c.subs || []).map(s => s.name).join(', '))}" placeholder="Alt kategoriler (virgülle ayır, isteğe bağlı)">
+      <div class="schips">${(c.subs || []).map(subChip).join('')}<button type="button" class="schip add" data-act="subadd">+ Alt kategori</button></div>
     </div>`;
+  const subChip = s => `<span class="schip" data-sid="${esc(s.id)}"><span class="sn">${esc(s.name)}</span><button type="button" data-act="subdel" aria-label="${esc(s.name)} sil">✕</button></span>`;
+  let catsDirty = false;
+  // Alt kategoriyi sil: ona bağlı işlemler sadece ana kategoriyle görünmeye devam eder
+  function deleteSub(type, catId, subId) {
+    const c = findCat(type, catId); if (!c) return true;
+    const s = c.subs.find(x => x.id === subId); if (!s) return true;
+    const used = D.tx.filter(t => t.categoryId === catId && t.subId === subId);
+    if (!confirm(used.length
+      ? `"${s.name}" ${used.length} işlemde kullanılıyor. Silinirse bu işlemler sadece "${c.name}" olarak görünür. Silinsin mi?`
+      : `"${s.name}" silinsin mi?`)) return false;
+    c.subs = c.subs.filter(x => x.id !== subId);
+    for (const t of used) t.subId = null;
+    D.favorites.forEach(f => { if (f.subId === subId) f.subId = null; });
+    save();
+    return true;
+  }
   function openCats(type) {
+    catsDirty = false;
     openSheet(`<div class="sheethead"><button data-act="close">✕</button><b>${type === 'expense' ? 'Gider' : 'Gelir'} Kategorileri</b><span class="sp"></span></div>
-      <div class="note">Simgeye dokunarak değiştir. Alt kategorileri virgülle ayırarak yaz (örn. Elektrik, Su, Doğalgaz).</div>
-      <div id="catlist">${D.categories[type].map(catRow).join('')}</div>
+      <div class="note">Simgeye dokunarak değiştir. Alt kategori eklemek / silmek anında kaydedilir; isim, simge ve sıra değişiklikleri için alttaki <b>Kaydet</b>'e bas.</div>
+      <div id="catlist" data-type="${type}">${D.categories[type].map(catRow).join('')}</div>
       <button class="btn wide" data-act="catadd">+ Yeni kategori</button>
       <div class="actions"><button class="btn primary" data-act="savecats" data-v="${type}">Kaydet</button></div>`);
   }
@@ -532,10 +549,6 @@
       ev.stopPropagation(); onPick(b.textContent); box.remove();
     });
     target.after(box);
-  }
-  function subsFromText(text, old = []) {
-    const names = [...new Set(text.split(',').map(s => s.trim()).filter(Boolean))];
-    return names.map(n => ({ id: old.find(s => lower(s.name) === lower(n))?.id || uid(), name: n }));
   }
 
   // ----- Hızlı kategori / alt kategori ekleme (işlem ekranından) -----
@@ -592,9 +605,17 @@
   function subChips() {
     const c = findCat(Ed.type, Ed.categoryId);
     if (!c) return '';
-    return `<div class="flabel">Alt kategori <span class="muted">(isteğe bağlı)</span></div><div class="chips">${(c.subs || []).map(s =>
+    const subs = c.subs || [];
+    if (Ed.subEdit) {
+      return `<div class="flabel">Alt kategorileri düzenle <span class="muted">(✕ ile sil)</span></div><div class="chips">${subs.map(s =>
+        `<span class="chip editing">${esc(s.name)}<button type="button" data-act="esubdel" data-v="${esc(s.id)}" aria-label="${esc(s.name)} sil">✕</button></span>`).join('')}
+        <button type="button" class="chip add" data-act="esubadd">+ Ekle</button>
+        <button type="button" class="chip done" data-act="esubedit">✓ Bitti</button></div>`;
+    }
+    return `<div class="flabel">Alt kategori <span class="muted">(isteğe bağlı)</span></div><div class="chips">${subs.map(s =>
       `<button type="button" class="chip ${s.id === Ed.subId ? 'on' : ''}" data-act="esub" data-v="${esc(s.id)}">${esc(s.name)}</button>`).join('')}
-      <button type="button" class="chip add" data-act="esubadd">+ Ekle</button></div>`;
+      <button type="button" class="chip add" data-act="esubadd">+ Ekle</button>
+      ${subs.length ? '<button type="button" class="chip add" data-act="esubedit">✎ Düzenle</button>' : ''}</div>`;
   }
   function drawEditor() {
     const e = Ed;
@@ -900,13 +921,15 @@
         break;
       }
       case 'edit': { const t = D.tx.find(t => t.id === el.dataset.id); if (t) openEditor(t); break; }
-      case 'close': closeSheet(); break;
+      case 'close':
+        if ($('#catlist') && catsDirty && !confirm('Kaydedilmemiş değişiklikler var (isim, simge veya sıra). Kaydetmeden çıkılsın mı?')) break;
+        catsDirty = false; closeSheet(); break;
       case 'etype':
         readEditor(); Ed.type = v;
         if (!findCat(v, Ed.categoryId)) { Ed.categoryId = null; Ed.subId = null; }
         drawEditor(); break;
       case 'ecat':
-        if (Ed.categoryId !== v) Ed.subId = null;
+        if (Ed.categoryId !== v) { Ed.subId = null; Ed.subEdit = false; }
         Ed.categoryId = v;
         document.querySelectorAll('.cat').forEach(b => b.classList.toggle('on', b.dataset.v === v));
         $('#subrow').innerHTML = subChips();
@@ -917,6 +940,14 @@
         break;
       case 'ecatadd': quickAddCategory(); break;
       case 'esubadd': quickAddSub(); break;
+      case 'esubedit': Ed.subEdit = !Ed.subEdit; $('#subrow').innerHTML = subChips(); break;
+      case 'esubdel':
+        if (deleteSub(Ed.type, Ed.categoryId, v)) {
+          if (Ed.subId === v) Ed.subId = null;
+          if (!findCat(Ed.type, Ed.categoryId)?.subs.length) Ed.subEdit = false;
+          $('#subrow').innerHTML = subChips(); render(); toast('Alt kategori silindi');
+        }
+        break;
       case 'efav': {
         const f = D.favorites.find(x => x.id === v); if (!f) break;
         readEditor();
@@ -981,22 +1012,42 @@
       case 'pickemoji': {
         const open = el.parentNode.nextElementSibling?.classList.contains('emopick');
         if (open) { el.parentNode.nextElementSibling.remove(); break; }
-        emojiPicker(el.parentNode, em => { el.textContent = em; });
+        emojiPicker(el.parentNode, em => { el.textContent = em; catsDirty = true; });
         break;
       }
       case 'catadd': {
         const div = document.createElement('div');
         div.innerHTML = catRow({ id: '', icon: '🏷️', name: '', subs: [] });
         $('#catlist').appendChild(div.firstElementChild);
-        $('#catlist').lastElementChild.querySelector('.cn').focus();
+        $('#catlist').lastElementChild.querySelector('.cn').focus(); catsDirty = true;
         break;
       }
-      case 'catup': { const r = el.closest('.cedit'); if (r.previousElementSibling) r.parentNode.insertBefore(r, r.previousElementSibling); break; }
+      case 'catup': { const r = el.closest('.cedit'); if (r.previousElementSibling) { r.parentNode.insertBefore(r, r.previousElementSibling); catsDirty = true; } break; }
       case 'catdel': {
         const r = el.closest('.cedit'), id = r.dataset.id;
         const n = id ? D.tx.filter(t => t.categoryId === id).length : 0;
         if (n && !confirm(`Bu kategori ${n} işlemde kullanılıyor. Silinirse bu işlemler "Kategorisiz" görünür. Devam?`)) return;
-        r.remove();
+        r.remove(); catsDirty = true;
+        break;
+      }
+      case 'subdel': {
+        const chip = el.closest('.schip'), row = el.closest('.cedit'), type = $('#catlist').dataset.type;
+        if (!chip.dataset.sid) { chip.remove(); break; } // henüz kaydedilmemiş yeni alt kategori
+        if (deleteSub(type, row.dataset.id, chip.dataset.sid)) { chip.remove(); render(); toast('Alt kategori silindi'); }
+        break;
+      }
+      case 'subadd': {
+        const row = el.closest('.cedit'), type = $('#catlist').dataset.type;
+        const catName = row.querySelector('.cn').value.trim() || 'Bu kategori';
+        const name = (prompt(`"${catName}" için yeni alt kategori:`) || '').trim();
+        if (!name) break;
+        if ([...row.querySelectorAll('.schip .sn')].some(x => lower(x.textContent) === lower(name))) { toast('Bu alt kategori zaten var'); break; }
+        const c = findCat(type, row.dataset.id);
+        const s = { id: c ? uid() : '', name };
+        if (c) { c.subs.push(s); save(); } else catsDirty = true; // yeni kategori: Kaydet ile birlikte kaydedilir
+        const tmp = document.createElement('div'); tmp.innerHTML = subChip(s);
+        el.before(tmp.firstElementChild);
+        toast(c ? 'Alt kategori eklendi' : 'Eklendi, kaydetmek için Kaydet\'e bas');
         break;
       }
       case 'savecats': {
@@ -1005,11 +1056,12 @@
           const name = r.querySelector('.cn').value.trim();
           if (!name) continue;
           const id = r.dataset.id || uid();
-          const old = findCat(v, r.dataset.id)?.subs || [];
-          list.push({ id, icon: r.querySelector('.emo').textContent.trim() || '🏷️', name, subs: subsFromText(r.querySelector('.subs').value, old) });
+          const subs = [...r.querySelectorAll('.schip[data-sid]')].map(x => ({ id: x.dataset.sid || uid(), name: x.querySelector('.sn').textContent }));
+          list.push({ id, icon: r.querySelector('.emo').textContent.trim() || '🏷️', name, subs });
         }
         if (!list.length) { toast('En az bir kategori olmalı'); return; }
         D.categories[v] = list;
+        catsDirty = false;
         save(); closeSheet(); render(); toast('Kategoriler kaydedildi');
         break;
       }
@@ -1037,7 +1089,10 @@
       $('#repn-wrap').style.visibility = t.value ? 'visible' : 'hidden';
     }
   });
-  document.addEventListener('input', e => { if (e.target.id === 's-q') runSearch(e.target.value); });
+  document.addEventListener('input', e => {
+    if (e.target.id === 's-q') runSearch(e.target.value);
+    if (e.target.closest('#catlist')) catsDirty = true;
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && ['f-amt', 'f-note'].includes(e.target.id)) { e.preventDefault(); saveEditor(false); }
     if (e.key === 'Escape' && !$('#sheet').classList.contains('hidden')) closeSheet();
