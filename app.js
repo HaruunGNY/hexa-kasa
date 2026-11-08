@@ -2,7 +2,7 @@
 (() => {
   // ===================== Sabitler =====================
   const KEY = 'hexakasa_data_v1';
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
   const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const WDS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
   const WDL = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -11,17 +11,42 @@
   const PALETTE = ['#ef5350', '#ffa726', '#fdd835', '#66bb6a', '#26a69a', '#42a5f5', '#5c6bc0', '#ab47bc', '#ec407a', '#8d6e63', '#78909c', '#c0ca33'];
   const EMOJIS = ['🏷️', '🍔', '🍕', '☕', '🍺', '🛒', '🚌', '🚕', '⛽', '🚗', '✈️', '🏠', '💡', '💧', '🔥', '📱', '💻', '👕', '👟', '💊', '🏥', '🎮', '🎬', '🎵', '⚽', '🏋️', '🎓', '📚', '💄', '✂️', '🐾', '👶', '🎁', '🎉', '📺', '🚬', '💳', '🏦', '💰', '💵', '📈', '🧾', '🛠️', '🧹', '🙏', '❤️', '📦'];
 
+  // Hazır kategoriler ve alt kategorileri (id'ler sabit: e0, e1… / i0, i1…)
+  const DEFAULT_CATS = {
+    expense: [
+      ['🍔', 'Yemek', ['Kahvaltı', 'Öğle Yemeği', 'Akşam Yemeği', 'Atıştırmalık', 'Paket Servis']],
+      ['🛒', 'Market', ['Gıda', 'Meyve / Sebze', 'Et / Tavuk', 'İçecek', 'Temizlik']],
+      ['🚌', 'Ulaşım', ['Toplu Taşıma', 'Taksi', 'Şehirlerarası Otobüs', 'Uçak']],
+      ['🏠', 'Kira / Ev', ['Kira', 'Aidat', 'Ev Eşyası', 'Tamir / Bakım']],
+      ['💡', 'Faturalar', ['Elektrik', 'Su', 'Doğalgaz']],
+      ['📱', 'Telefon / İnternet', ['Cep Telefonu', 'Ev İnterneti']],
+      ['👕', 'Giyim', ['Kıyafet', 'Ayakkabı', 'Aksesuar']],
+      ['💊', 'Sağlık', ['İlaç', 'Doktor / Hastane', 'Diş']],
+      ['🎮', 'Eğlence', ['Sinema', 'Konser / Etkinlik', 'Oyun', 'Gezi / Tatil']],
+      ['☕', 'Kafe', ['Kahve', 'Çay', 'Tatlı']],
+      ['🎓', 'Eğitim', ['Kurs', 'Kitap', 'Okul']],
+      ['💄', 'Kişisel Bakım', ['Kuaför / Berber', 'Kozmetik']],
+      ['🚗', 'Araç / Yakıt', ['Yakıt', 'Bakım', 'Otopark', 'Köprü / Otoyol', 'Sigorta / Vergi']],
+      ['🎁', 'Hediye', ['Doğum Günü', 'Bayram', 'Özel Gün']],
+      ['📺', 'Abonelik', ['Dijital Platform', 'Müzik', 'Spor Salonu', 'Uygulama']],
+      ['📦', 'Diğer', []],
+    ],
+    income: [
+      ['💰', 'Maaş', []],
+      ['🎉', 'Prim / İkramiye', []],
+      ['💵', 'Ek Gelir', ['Freelance', 'Kira Geliri', 'Satış']],
+      ['📈', 'Yatırım', ['Faiz', 'Hisse', 'Döviz / Altın']],
+      ['🎁', 'Hediye', []],
+      ['📦', 'Diğer', []],
+    ],
+  };
+  const DATA_V = 3;
   function defaultData() {
-    const mk = (arr, p) => arr.map(([icon, name, subs], i) => ({ id: p + i, icon, name, subs: (subs || []).map((n, j) => ({ id: `${p}${i}s${j}`, name: n })) }));
-    const exp = mk([['🍔', 'Yemek', ['Restoran', 'Paket Servis', 'Kahvaltı', 'Atıştırmalık']], ['🛒', 'Market'],
-      ['🚌', 'Ulaşım', ['Toplu Taşıma', 'Taksi', 'Uçak / Otobüs']], ['🏠', 'Kira / Ev', ['Kira', 'Aidat', 'Ev Eşyası']],
-      ['💡', 'Faturalar', ['Elektrik', 'Su', 'Doğalgaz']], ['📱', 'Telefon / İnternet'], ['👕', 'Giyim'],
-      ['💊', 'Sağlık', ['İlaç', 'Doktor']], ['🎮', 'Eğlence', ['Sinema', 'Oyun', 'Gezi']], ['☕', 'Kafe'],
-      ['🎓', 'Eğitim', ['Kurs', 'Kitap']], ['💄', 'Kişisel Bakım'], ['🚗', 'Araç / Yakıt', ['Yakıt', 'Bakım', 'Otopark']],
-      ['🎁', 'Hediye'], ['📺', 'Abonelik'], ['📦', 'Diğer']], 'e');
-    const inc = mk([['💰', 'Maaş'], ['🎉', 'Prim / İkramiye'], ['💵', 'Ek Gelir'], ['📈', 'Yatırım'], ['🎁', 'Hediye'], ['📦', 'Diğer']], 'i');
+    const mk = (arr, p) => arr.map(([icon, name, subs], i) => ({ id: p + i, icon, name, subs: subs.map((n, j) => ({ id: `${p}${i}s${j}`, name: n })) }));
+    const exp = mk(DEFAULT_CATS.expense, 'e');
+    const inc = mk(DEFAULT_CATS.income, 'i');
     return {
-      v: 2,
+      v: DATA_V,
       accounts: [
         { id: 'a1', name: 'Nakit', group: 'Nakit', initial: 0 },
         { id: 'a2', name: 'Banka Hesabı', group: 'Banka', initial: 0 },
@@ -40,8 +65,20 @@
     const d = defaultData();
     const cats = (r.categories && r.categories.expense && r.categories.income) ? r.categories : d.categories;
     for (const t of ['expense', 'income']) cats[t] = cats[t].map(c => ({ ...c, subs: Array.isArray(c.subs) ? c.subs : [] }));
+    // Eski sürümden gelen veriye yeni hazır alt kategorileri bir kez ekle (kullanıcının kendi eklediklerine dokunmadan)
+    if ((r.v || 1) < 3) {
+      const low = s => String(s).toLocaleLowerCase('tr');
+      let k = 0;
+      for (const [t, p] of [['expense', 'e'], ['income', 'i']]) {
+        DEFAULT_CATS[t].forEach(([, , subs], i) => {
+          const c = cats[t].find(x => x.id === p + i);
+          if (!c) return;
+          for (const n of subs) if (!c.subs.some(s => low(s.name) === low(n))) c.subs.push({ id: `m${Date.now().toString(36)}${k++}`, name: n });
+        });
+      }
+    }
     return {
-      ...d, ...r,
+      ...d, ...r, v: DATA_V,
       accounts: Array.isArray(r.accounts) ? r.accounts : d.accounts,
       categories: cats,
       tx: Array.isArray(r.tx) ? r.tx : [],
