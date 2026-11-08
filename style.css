@@ -1,11 +1,12 @@
 :root {
   --bg: #f3f4f6; --card: #fff; --text: #1c1d21; --muted: #7b7f88; --line: #e6e8ec;
-  --pri: #0f9d76; --inc: #2b7de9; --exp: #e5484d; --trf: #7b7f88; --chip: #eef0f3;
+  --pri: #0284c7; --on-pri: #fff; --inc: #2b7de9; --exp: #e5484d; --trf: #7b7f88; --chip: #eef0f3;
+  --grad: linear-gradient(135deg, #38bdf8, #818cf8); --on-grad: #0a0a0a;
   --top: 56px;
 }
 [data-theme="dark"] {
-  --bg: #0f1113; --card: #1a1d20; --text: #eceef1; --muted: #9097a0; --line: #2a2e33;
-  --chip: #262a2f; --inc: #5b9cf5; --exp: #f2676b; --pri: #13a87f;
+  --bg: #0a0a0a; --card: #141518; --text: #eceef1; --muted: #9097a0; --line: #24272d;
+  --chip: #1f2227; --inc: #5b9cf5; --exp: #f2676b; --pri: #38bdf8; --on-pri: #0a0a0a;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -19,7 +20,8 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
   padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
 
 /* Üst bar */
-#topbar { position: sticky; top: 0; z-index: 5; background: var(--pri); color: #fff;
+#topbar { position: sticky; top: 0; z-index: 5; background: #0a0a0a; color: #fff;
+  border-bottom: 2px solid transparent; border-image: var(--grad) 1;
   display: flex; align-items: center; gap: 2px; min-height: var(--top);
   padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; }
 #topbar .title { font-size: 18px; font-weight: 600; padding: 4px 8px; color: #fff; text-align: center; line-height: 1.2; }
@@ -77,7 +79,7 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 .cell:nth-child(7n+1) { border-left: 0; }
 .cell.blank { cursor: default; background: var(--bg); opacity: .5; }
 .cell .cd { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
-.cell.today .cd { background: var(--pri); color: #fff; border-radius: 10px; display: inline-block; padding: 0 6px; }
+.cell.today .cd { background: var(--pri); color: var(--on-pri); border-radius: 10px; display: inline-block; padding: 0 6px; }
 .cell .inc, .cell .exp { text-align: right; white-space: nowrap; line-height: 1.35; }
 
 /* Aylık */
@@ -109,7 +111,7 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 
 /* Bütçe */
 .barbg { height: 10px; background: var(--chip); border-radius: 6px; overflow: hidden; margin: 9px 0 7px; }
-.barfg { height: 100%; background: var(--pri); border-radius: 6px; }
+.barfg { height: 100%; background: var(--grad); border-radius: 6px; }
 .barfg.warn { background: #f5a524; } .barfg.over { background: var(--exp); }
 .brow, .bsub { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .brow .left { display: flex; align-items: center; gap: 8px; }
@@ -118,7 +120,7 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 
 /* Butonlar */
 .btn { padding: 13px 16px; border-radius: 12px; font-weight: 600; background: var(--chip); }
-.btn.primary { background: var(--pri); color: #fff; }
+.btn.primary { background: var(--grad); color: var(--on-grad); }
 .btn.danger { color: var(--exp); }
 .btn.wide { display: block; width: calc(100% - 24px); margin: 12px; }
 
@@ -149,8 +151,8 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
 #bottomnav button.active { color: var(--pri); font-weight: 600; }
 #bottomnav svg { width: 23px; height: 23px; }
 #fab { position: fixed; right: max(18px, calc(50% - 302px)); bottom: calc(78px + env(safe-area-inset-bottom));
-  width: 58px; height: 58px; border-radius: 50%; background: var(--exp); color: #fff; font-size: 34px; line-height: 1;
-  box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 7; }
+  width: 58px; height: 58px; border-radius: 50%; background: var(--grad); color: var(--on-grad); font-size: 34px; line-height: 1;
+  box-shadow: 0 6px 20px rgba(56,189,248,.35); z-index: 7; }
 #fab:active { transform: scale(.94); }
 
 /* Alt sayfa (sheet) */
@@ -225,3 +227,5 @@ button { background: none; border: 0; cursor: pointer; padding: 0; }
   background: rgba(30,30,30,.92); color: #fff; padding: 10px 18px; border-radius: 22px; font-size: 14px;
   z-index: 50; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
 #toast.show { opacity: 1; }
+.ver .brand { font-weight: 700; text-decoration: none; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ver { line-height: 1.7; }

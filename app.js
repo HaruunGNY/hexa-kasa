@@ -2,7 +2,7 @@
 (() => {
   // ===================== Sabitler =====================
   const KEY = 'hexakasa_data_v1';
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const WDS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
   const WDL = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -195,7 +195,7 @@
   function applyTheme() {
     const t = D.settings.theme === 'auto' ? (mq.matches ? 'dark' : 'light') : D.settings.theme;
     document.documentElement.dataset.theme = t;
-    document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#0f1113' : '#0f9d76';
+    document.querySelector('meta[name=theme-color]').content = '#0a0a0a';
   }
   mq.addEventListener?.('change', applyTheme);
 
@@ -466,7 +466,7 @@
         <div class="row"><span>Toplam işlem</span><span class="muted">${D.tx.length}</span></div>
         <button class="row danger" data-act="wipe">Tüm verileri sil</button>
       </div>
-      <div class="ver">Hexa Kasa v${VERSION} · Reklamsız · Veriler sadece bu cihazda saklanır.<br>Düzenli yedek almayı unutma!</div>`;
+      <div class="ver"><a class="brand" href="https://hexaforge.com.tr/" target="_blank" rel="noopener">⬡ Hexaforge</a> tarafından geliştirildi<br>Hexa Kasa v${VERSION} · Reklamsız · Veriler sadece bu cihazda saklanır.<br>Düzenli yedek almayı unutma!</div>`;
   }
 
   // ----- Kategori yönetimi -----
